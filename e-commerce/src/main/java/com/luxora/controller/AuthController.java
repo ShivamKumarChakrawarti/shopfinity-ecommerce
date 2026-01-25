@@ -3,6 +3,7 @@ package com.luxora.controller;
 import com.luxora.domain.USER_ROLE;
 import com.luxora.entity.VerificationCode;
 import com.luxora.repository.UserRepository;
+import com.luxora.request.LoginRequest;
 import com.luxora.response.ApiResponse;
 import com.luxora.response.AuthResponse;
 import com.luxora.response.SignupRequest;
@@ -38,11 +39,19 @@ public class AuthController {
     @PostMapping("/sent/login-signup-otp")
     public ResponseEntity<ApiResponse<String>> sentOtpHandler(
             @RequestBody VerificationCode req) throws Exception {
-       authService.sentLoginOtp(req.getOtp());
+       authService.sentLoginOtp(req.getEmail());
        ApiResponse<String> res = new ApiResponse<>(
                "OTP sent successfully", true, null
        );
 
        return ResponseEntity.ok(res);
     }
+
+    @PostMapping("/signing")
+    public ResponseEntity<AuthResponse> loginHandler(
+            @RequestBody LoginRequest request) throws Exception{
+        AuthResponse authResponse = authService.signing(request);
+        return ResponseEntity.ok(authResponse);
+    }
+//    video pause at 5:23
 }

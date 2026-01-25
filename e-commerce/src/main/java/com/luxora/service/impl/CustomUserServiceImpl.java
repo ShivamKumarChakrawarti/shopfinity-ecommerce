@@ -11,6 +11,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -20,6 +21,7 @@ import java.util.*;
 public class CustomUserServiceImpl implements UserDetailsService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
     private final SellerRepository sellerRepository;
     private static final String SELLER_PREFIX = "seller_";
 
@@ -44,8 +46,13 @@ public class CustomUserServiceImpl implements UserDetailsService {
     private UserDetails buildUserDetails(String email, String password, USER_ROLE role) {
         if(role==null) role = USER_ROLE.ROLE_CUSTOMER;
 
+        if (password == null || password.isBlank()) {
+            // dummy password for OTP users
+            password = passwordEncoder.encode("DUMMY_PASSWORD");
+        }
+
         List<GrantedAuthority> authorityList = new ArrayList<>();
-        authorityList.add(new SimpleGrantedAuthority("ROLE_"+role));
+        authorityList.add(new SimpleGrantedAuthority(role.toString()));
 
         return new org.springframework.security.core.userdetails.User(
                 email,

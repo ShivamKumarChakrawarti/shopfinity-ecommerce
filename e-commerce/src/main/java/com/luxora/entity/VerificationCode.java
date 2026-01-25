@@ -3,6 +3,8 @@ package com.luxora.entity;
 import lombok.*;
 import jakarta.persistence.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @Setter
@@ -23,4 +25,6 @@ public class VerificationCode {
 
     @OneToOne
     private Seller seller;
+
+    private LocalDateTime expiryTime;
 }

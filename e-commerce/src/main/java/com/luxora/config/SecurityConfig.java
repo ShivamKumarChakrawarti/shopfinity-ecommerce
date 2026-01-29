@@ -1,70 +1,81 @@
-package com.luxora.config; // Change this based on your package structure
+package com.luxora.config;
 
-import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Collections;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final JwtTokenValidator jwtTokenValidator;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Use stateless sessions
 
-//                .authorizeHttpRequests(auth -> auth
-//                        .requestMatchers("/api/**").authenticated()
-//                        .requestMatchers("/api/products/*/reviews").permitAll()
-//                        .requestMatchers("/auth/signup","/auth/sent/login-signup-otp").permitAll() // Allow signup endpoint without authentication
-//                        .anyRequest().authenticated() // Protect all other endpoints
+        http
+                // ✅ Stateless API (JWT based)
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
+                // ✅ Disable CSRF (not needed for JWT)
+                .csrf(AbstractHttpConfigurer::disable)
+
+                // ✅ Enable CORS
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
+                // ✅ Authorization rules
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll() // Allow all /auth/ endpoints
-                        .requestMatchers("/api/products/*/reviews").permitAll()
-                        .requestMatchers("/api/**").authenticated()
+                        .requestMatchers("/auth/**").permitAll()   // OTP, signup, login
+                        .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                         .anyRequest().authenticated()
-                ).addFilterBefore(new JwtTokenValidator(), BasicAuthenticationFilter.class)
-                .csrf(csrf -> csrf.disable()) // Disable CSRF for simplicity (Enable it later for better security)
-                .cors(cors->cors.configurationSource(corsConfigurationSource()));
+                )
+
+                // ✅ JWT filter (VERY IMPORTANT)
+                .addFilterBefore(jwtTokenValidator, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    private CorsConfigurationSource corsConfigurationSource() {
-        return new CorsConfigurationSource() {
-            @Override
-            public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
+    // ✅ CORS configuration
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
 
-                CorsConfiguration cfg = new CorsConfiguration();
-                cfg.setAllowedOrigins(Collections.singletonList("*"));
-                cfg.setAllowedMethods(Collections.singletonList("*"));
-                cfg.setAllowedHeaders(Collections.singletonList("*"));
-                cfg.setAllowCredentials(true);
-                cfg.setExposedHeaders(Collections.singletonList("Authorization"));
-                cfg.setMaxAge(3600l);
-                return cfg;
-            }
+        CorsConfiguration cfg = new CorsConfiguration();
+        cfg.setAllowedOrigins(List.of("*"));
+        cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        cfg.setAllowedHeaders(List.of("*"));
+        cfg.setExposedHeaders(List.of("Authorization"));
+        cfg.setAllowCredentials(false); // IMPORTANT: must be false when using "*"
 
-        };
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", cfg);
+        return source;
     }
 
-//  Password decryption method to save password in database
+    // ✅ Password encoder (still required by Spring Security)
     @Bean
-    PasswordEncoder passwordEncoder(){
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
     @Bean
     public RestTemplate restTemplate(){
         return new RestTemplate();

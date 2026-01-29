@@ -3,8 +3,12 @@ package com.luxora.entity;
 import com.luxora.domain.AccountStatus;
 import com.luxora.domain.USER_ROLE;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
-import java.util.*;
+
+import java.time.LocalDateTime;
+import java.util.Set;
 
 
 @Entity
@@ -21,13 +25,19 @@ public class Seller {
 
     private String sellerName;
 
+    @NotBlank(message = "Phone number is required")
     private String mobileNumber;
 
     @Column(unique = true, nullable = false)
+    @NotBlank(message = "Email is required")
+    @Email(message = "Invalid email format")
     private String email;
+
+    @NotBlank(message = "Password is required")
     private String password;
 
     @Embedded
+    @NotBlank(message = "Business details is required")
     private BusinessDetails businessDetails = new BusinessDetails();
 
     @Embedded
@@ -50,4 +60,6 @@ public class Seller {
 
     @OneToMany(mappedBy = "seller", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Transaction> transactions;
+
+    private LocalDateTime createdAt;
 }

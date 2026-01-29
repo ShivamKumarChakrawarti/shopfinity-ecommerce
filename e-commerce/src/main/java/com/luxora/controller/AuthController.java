@@ -53,5 +53,4 @@ public class AuthController {
         AuthResponse authResponse = authService.signing(request);
         return ResponseEntity.ok(authResponse);
     }
-//    video pause at 5:23
 }

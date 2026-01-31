@@ -1,11 +1,13 @@
 package com.luxora.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.luxora.domain.ProductStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "cart_items")
@@ -19,17 +21,26 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String title;
 
+    @Column(length = 2000)
     private String description;
 
-    private double mrpPrice;
+    @Column(nullable = false)
+    private BigDecimal mrpPrice;
 
-    private double sellingPrice;
+    @Column(nullable = false)
+    private BigDecimal sellingPrice;
 
     private double discountPercent;
 
-    private int quantity;
+    @Column(nullable = false)
+    private int availableQuantity;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ProductStatus status;
 
     private String color;
 
@@ -42,11 +53,12 @@ public class Product {
     @JoinColumn(name = "category_id")
     private Category category;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "seller_id")
     private Seller seller;
 
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     private String Sizes;
 

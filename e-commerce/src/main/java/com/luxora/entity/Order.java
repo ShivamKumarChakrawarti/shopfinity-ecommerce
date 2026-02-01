@@ -4,8 +4,11 @@ import com.luxora.domain.OrderStatus;
 import com.luxora.domain.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "orders")
@@ -19,9 +22,9 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String orderId;
+    private String orderNumber;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 
@@ -37,13 +40,14 @@ public class Order {
     @Embedded
     private PaymentDetails paymentDetails = new PaymentDetails();
 
-    private double totalMrpPrice;
+    private BigDecimal totalMrpPrice;
+    private BigDecimal totalSellingPrice;
+    private BigDecimal TotalDiscount;
 
-    private Integer totalSellingPrice;
-
-    private Integer discount;
-
+    @Enumerated(EnumType.STRING)
     private OrderStatus orderStatus;
+
+    private LocalDateTime createdAt;
 
     private int totalItem;
 

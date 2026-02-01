@@ -4,6 +4,7 @@ import com.luxora.domain.AccountStatus;
 import com.luxora.domain.ProductStatus;
 import com.luxora.entity.Product;
 import com.luxora.entity.Seller;
+import com.luxora.mapper.ProductMapper;
 import com.luxora.repository.ProductRepository;
 import com.luxora.request.ProductCreateRequest;
 import com.luxora.request.ProductUpdateRequest;
@@ -12,10 +13,13 @@ import com.luxora.service.ProductService;
 import com.luxora.service.SellerServices;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -26,6 +30,7 @@ public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepo;
     private final SellerServices sellerSvc;
+    private final ProductMapper productMapper;
 
     @Override
     public ProductResponse createProduct(String jwt, ProductCreateRequest req) throws Exception {
@@ -47,7 +52,7 @@ public class ProductServiceImpl implements ProductService {
         Product saved = productRepo.save(product);
 
         log.info("Product created | id={} | seller={}", saved.getId(), seller.getEmail());
-        return mapToResponse(saved);
+        return productMapper.mapToResponse(saved);
     }
 
 
@@ -73,7 +78,7 @@ public class ProductServiceImpl implements ProductService {
         }
 
         Product updated = productRepo.save(product);
-        return mapToResponse(updated);
+        return productMapper.mapToResponse(updated);
     }
 
     // =========================
@@ -85,7 +90,7 @@ public class ProductServiceImpl implements ProductService {
         Seller seller = sellerSvc.getSellerProfile(jwt);
         return productRepo.findBySellerId(seller.getId())
                 .stream()
-                .map(this::mapToResponse)
+                .map(productMapper::mapToResponse)
                 .toList();
     }
 
@@ -95,6 +100,19 @@ public class ProductServiceImpl implements ProductService {
                 .stream()
                 .map(this::mapToCustomerResponse)
                 .toList();
+    }
+
+    @Override
+    public Page<ProductResponse> discoverProducts(
+            Integer page, Integer size, String sort, Long categoryId, String query){
+
+        Pageable pageable = PageRequest.of(
+                page != null ? page : 0,
+                size != null ? size : 20,
+                resolveSort(sort)
+        );
+        return productRepo.searchProducts(categoryId, query, pageable)
+                .map(productMapper::mapToResponse);
     }
 
     // =========================
@@ -121,26 +139,20 @@ public class ProductServiceImpl implements ProductService {
         }
     }
 
-    private ProductResponse mapToResponse(Product product) {
+    private Sort resolveSort(String sort){
+        if(sort == null) return Sort.by("createdAt").descending();
 
-        int discount = calculateDiscount(product);
-
-        return new ProductResponse(
-                product.getId(),
-                product.getTitle(),
-                product.getDescription(),
-                product.getMrpPrice(),
-                product.getSellingPrice(),
-                discount,
-                product.getAvailableQuantity(),
-                product.getAvailableQuantity() > 0,
-                null // seller trust added later
-        );
+        return switch (sort){
+            case "price_asc" -> Sort.by("sellingPrice").ascending();
+            case "price_desc" -> Sort.by("sellingPrice").descending();
+            case "discount" -> Sort.by("mrpPrice").descending();
+            default -> Sort.by("createdAt").descending();
+        };
     }
 
     private ProductResponse mapToCustomerResponse(Product product) {
 
-        int discount = calculateDiscount(product);
+        int discount = productMapper.calculateDiscountPercentage(product);
 
         return new ProductResponse(
                 product.getId(),
@@ -154,14 +166,4 @@ public class ProductServiceImpl implements ProductService {
                 "Trusted Seller" // placeholder
         );
     }
-
-    private int calculateDiscount(Product product) {
-
-        return product.getMrpPrice()
-                .subtract(product.getSellingPrice())
-                .multiply(BigDecimal.valueOf(100))
-                .divide(product.getMrpPrice(), RoundingMode.HALF_UP)
-                .intValue();
-    }
-
 }

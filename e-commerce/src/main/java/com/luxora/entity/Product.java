@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "cart_items")
+@Table(name = "product")
 @Getter
 @Setter
 @Data
@@ -64,4 +64,9 @@ public class Product {
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Review> reviews = new ArrayList<>();
+
+    @Column(length = 500)
+    private String adminRemarks;
+
+    private LocalDateTime reviewedAt;
 }

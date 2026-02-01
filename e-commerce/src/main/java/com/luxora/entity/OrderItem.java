@@ -2,8 +2,12 @@ package com.luxora.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.*;
-import java.util.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "order_items")
@@ -18,20 +22,17 @@ public class OrderItem {
 
     @JsonIgnore
     @ManyToOne
-//    @JoinColumn(name = "order_id")
     private Order order;
 
-    @ManyToOne
-//    @JoinColumn(name = "product_id")
+    @ManyToOne(fetch = FetchType.LAZY)
     private Product product;
 
     private String size;
 
-    private int quantity;
+    private Integer quantity;
 
-    private Integer mrpPrice;
-
-    private Integer sellingPrice;
+    private BigDecimal mrpPrice;
+    private BigDecimal sellingPrice;
 
     private Long userId;
 

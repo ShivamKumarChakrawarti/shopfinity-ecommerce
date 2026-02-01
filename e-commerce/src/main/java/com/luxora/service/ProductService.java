@@ -3,6 +3,7 @@ package com.luxora.service;
 import com.luxora.request.ProductCreateRequest;
 import com.luxora.request.ProductUpdateRequest;
 import com.luxora.response.ProductResponse;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
@@ -14,4 +15,7 @@ public interface ProductService {
     List<ProductResponse> getSellerProducts(String jwt) throws Exception;
 
     List<ProductResponse> getProductsForCustomers();
+
+    Page<ProductResponse> discoverProducts(
+            Integer page, Integer size, String sort, Long categoryId, String query);
 }

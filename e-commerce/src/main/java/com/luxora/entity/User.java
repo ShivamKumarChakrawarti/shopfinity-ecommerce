@@ -19,7 +19,7 @@ import java.util.Set;
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)//This is used to generate value by the SpringBoot
-    private long id;
+    private Long id;
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) //This is used to give password from database
     private String password;

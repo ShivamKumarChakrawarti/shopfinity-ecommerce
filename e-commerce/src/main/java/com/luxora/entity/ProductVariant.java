@@ -1,36 +1,33 @@
 package com.luxora.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "cart_items")
+@Table(name = "product_variants")
 @Getter
 @Setter
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CartItem {
+public class ProductVariant {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private Integer quantity;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnore
-    @JoinColumn(name = "cart_id")
-    private Cart cart;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id")
     private Product product;
 
-    @ManyToOne
-    private ProductVariant variant;
+    private String sku;
+    private String size;
+    private String color;
 
     private BigDecimal mrpPrice;
     private BigDecimal sellingPrice;
+
+    private Integer stockQuantity;
+
+    private boolean active;
 }

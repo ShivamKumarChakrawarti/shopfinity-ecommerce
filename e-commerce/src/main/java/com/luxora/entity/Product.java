@@ -42,7 +42,6 @@ public class Product {
     @Column(nullable = false)
     private ProductStatus status;
 
-    private String color;
 
     @ElementCollection
     private List<String> images = new ArrayList<>();
@@ -60,13 +59,16 @@ public class Product {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    private String Sizes;
-
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Review> reviews = new ArrayList<>();
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductVariant> variants = new ArrayList<>();
 
     @Column(length = 500)
     private String adminRemarks;
 
     private LocalDateTime reviewedAt;
+
+    private boolean active;
 }

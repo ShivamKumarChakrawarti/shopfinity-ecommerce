@@ -10,6 +10,8 @@ public class AddToCartRequest {
     @NotNull
     private Long productId;
 
+    private Long variantId;
+
     @Positive
     private Integer quantity;
 }

@@ -1,13 +1,11 @@
 package com.luxora.service.impl;
 
 import com.luxora.domain.ProductStatus;
-import com.luxora.entity.Cart;
-import com.luxora.entity.CartItem;
-import com.luxora.entity.Product;
-import com.luxora.entity.User;
+import com.luxora.entity.*;
 import com.luxora.repository.CartItemRepository;
 import com.luxora.repository.CartRepository;
 import com.luxora.repository.ProductRepository;
+import com.luxora.repository.ProductVariantRepository;
 import com.luxora.request.AddToCartRequest;
 import com.luxora.request.UpdateCartItemRequest;
 import com.luxora.response.CartItemResponse;
@@ -33,6 +31,7 @@ public class CartServiceImpl implements CartService {
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
     private final UserServices userServices;
+    private final ProductVariantRepository productVariantRepository;
 
     @Override
     public CartResponse getCart(String jwt) throws Exception {
@@ -51,18 +50,46 @@ public class CartServiceImpl implements CartService {
         Cart cart = cartRepository.findByUserId(user.getId())
                 .orElseGet(()-> createCartForUser(user));
 
-        Product product = validateProductForCart(request.getProductId());
+        ProductVariant variant = productVariantRepository.findByIdAndActiveTrue(request.getVariantId())
+                .orElseThrow(() -> new RuntimeException("Product variant not available"));
 
-        CartItem item = cartItemRepository
-                .findByCartIdAndProductId(cart.getId(), product.getId())
-                .orElseGet(()-> createCartItem(cart, product));
+        if (variant.getStockQuantity() < request.getQuantity()) {
+            throw new RuntimeException("Insufficient stock for selected variant");
+        }
 
-        item.setQuantity(item.getQuantity() + request.getQuantity());
-        cartItemRepository.save(item);
+        CartItem cartItem  = cartItemRepository
+                .findByCartIdAndProductId(cart.getId(), variant.getId())
+                .orElse(null);
+
+        if (cartItem == null) {
+            // 6️⃣ Create new cart item
+            cartItem = new CartItem();
+            cartItem.setCart(cart);
+            cartItem.setVariant(variant);
+            cartItem.setQuantity(request.getQuantity());
+
+            // 🔒 PRICE SNAPSHOT (CRITICAL)
+            cartItem.setMrpPrice(variant.getMrpPrice());
+            cartItem.setSellingPrice(variant.getSellingPrice());
+
+        } else {
+            // 7️⃣ Increase quantity
+            int newQty = cartItem.getQuantity() + request.getQuantity();
+
+            if (variant.getStockQuantity() < newQty) {
+                throw new RuntimeException("Stock exceeded for selected variant");
+            }
+
+            cartItem.setQuantity(newQty);
+        }
+
+        // 8️⃣ Save changes
+        cartItemRepository.save(cartItem);
 
         cart.setUpdatedAt(LocalDateTime.now());
         cartRepository.save(cart);
 
+        // 9️⃣ Return updated cart
         return mapToResponse(cart);
     }
 

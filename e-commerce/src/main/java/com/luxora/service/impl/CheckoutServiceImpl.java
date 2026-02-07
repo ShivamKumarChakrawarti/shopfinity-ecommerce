@@ -2,10 +2,7 @@ package com.luxora.service.impl;
 
 import com.luxora.domain.OrderStatus;
 import com.luxora.entity.*;
-import com.luxora.repository.AddressRepository;
-import com.luxora.repository.CartRepository;
-import com.luxora.repository.OrderRepository;
-import com.luxora.repository.ProductRepository;
+import com.luxora.repository.*;
 import com.luxora.request.CheckoutRequest;
 import com.luxora.response.OrderResponse;
 import com.luxora.service.CheckoutService;
@@ -25,8 +22,9 @@ import java.util.UUID;
 public class CheckoutServiceImpl implements CheckoutService {
 
     private final CartRepository cartRepository;
+    private final CartItemRepository cartItemRepository;
     private final OrderRepository orderRepository;
-    private final ProductRepository productRepository;
+    private final ProductVariantRepository productVariantRepository;
     private final UserServices userServices;
     private AddressRepository addressRepository;
 
@@ -50,27 +48,29 @@ public class CheckoutServiceImpl implements CheckoutService {
 
         Order order = new Order();
         order.setUser(user);
-        order.setOrderStatus(OrderStatus.CREATED);
-        order.setCreatedAt(LocalDateTime.now());
-        order.setOrderNumber(UUID.randomUUID().toString());
         order.setShippingAddress(address);
+        order.setOrderStatus(OrderStatus.CREATED);
+        order.setOrderNumber(UUID.randomUUID().toString());
+        order.setCreatedAt(LocalDateTime.now());
 
         for(CartItem cartItem : cart.getCartItems()){
-            Product product = productRepository.findById(cartItem.getProduct().getId())
-                    .orElseThrow(()-> new RuntimeException("Product not found"));
+            ProductVariant variant = productVariantRepository.findById(cartItem.getVariant().getId())
+                    .orElseThrow(() -> new RuntimeException("Variant not found"));
 
-            if (product.getAvailableQuantity() < cartItem.getQuantity()){
+            if (variant.getStockQuantity() < cartItem.getQuantity()) {
                 throw new RuntimeException(
-                        "Insufficient stock for product: " + product.getTitle()
+                        "Insufficient stock for SKU: " + variant.getSku()
                 );
             }
 
-            product.setAvailableQuantity(product.getAvailableQuantity() - cartItem.getQuantity());
-            productRepository.save(product);
+            variant.setStockQuantity(
+                    variant.getStockQuantity() - cartItem.getQuantity()
+            );
+            productVariantRepository.save(variant);
 
             OrderItem orderItem = new OrderItem();
             orderItem.setOrder(order);
-            orderItem.setProduct(product);
+            orderItem.setVariant(variant);
             orderItem.setQuantity(cartItem.getQuantity());
             orderItem.setMrpPrice(cartItem.getMrpPrice());
             orderItem.setSellingPrice(cartItem.getSellingPrice());
@@ -94,6 +94,7 @@ public class CheckoutServiceImpl implements CheckoutService {
 
         Order savedOrder = orderRepository.save(order);
 
+        cartItemRepository.deleteAll(cart.getCartItems());
         cart.getCartItems().clear();
         cartRepository.save(cart);
 

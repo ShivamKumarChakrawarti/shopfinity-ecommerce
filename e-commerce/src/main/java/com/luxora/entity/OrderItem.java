@@ -27,13 +27,11 @@ public class OrderItem {
     @ManyToOne(fetch = FetchType.LAZY)
     private Product product;
 
-    private String size;
+    private ProductVariant variant;
 
     private Integer quantity;
 
     private BigDecimal mrpPrice;
     private BigDecimal sellingPrice;
-
-    private Long userId;
 
 }
